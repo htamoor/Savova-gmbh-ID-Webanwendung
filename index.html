@@ -25,8 +25,7 @@
 <div class="foot" style="margin:18px 4px">Technischer Hinweis: Die Serverzeit ist maßgeblich. Offline-Scans werden nicht als bestätigte Leerungen gespeichert. Die Normkonformität nach DIN EN 14803:2024-12 muss gesondert anhand der vollständigen Hardware-, Schnittstellen- und Prozessanforderungen bewertet werden.</div>
 </div>
 <script>
-// Bitte SUPABASE_URL auf die Project URL deines neuen Supabase-Projekts setzen.
-const SUPABASE_URL = 'https://DEIN-PROJEKT-REF.supabase.co';
+const SUPABASE_URL = 'https://vnzhchwjtytlotcfexix.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GgRr9fSUOIThON-nuxRd-A__Gb1HF3l';
 const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let session=null, appRole=null, events=[], containers=[], tagMap={}, btCharacteristic=null, btDevice=null, scanBuffer='', scanBufferTimer=null;
@@ -144,3 +143,6 @@ function exportCSV(){const rows=exportRows();if(!rows.length){alert('Keine best�
 function printReport(){const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}const w=window.open('','_blank');if(!w){alert('Pop-up bitte erlauben.');return;}w.document.write('<html lang="de"><meta charset="utf-8"><title>Entleerungsnachweis</title><style>body{font:12px Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left}</style><h1>Entleerungsnachweis – Savova GmbH</h1><p>Erstellt: '+esc(new Date().toLocaleString('de-DE'))+'</p><table><tr><th>Serverzeit</th><th>Transponder</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Hash</th></tr>'+rows.map(e=>{const b=tagMap[e.tag_id]||{};return '<tr><td>'+esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))+'</td><td>'+esc(e.tag_id)+'</td><td>'+esc(b.name||e.container_ref)+'</td><td>'+esc(b.meisterei||'–')+'</td><td>'+esc(e.event_name)+'</td><td>'+esc(e.content_hash)+'</td></tr>';}).join('')+'</table><script>window.print()<\/script></html>');w.document.close();}
 (async()=>{const {data}=await db.auth.getSession();if(data.session){session=data.session;await initializeApp();}db.auth.onAuthStateChange((_event,newSession)=>{if(!newSession){session=null;appRole=null;$('appView').classList.add('hidden');$('loginView').classList.remove('hidden');$('logoutBtn').classList.add('hidden');$('roleBadge').textContent='Nicht angemeldet';}});})();
 </script></body></html>
+```[cite: 2, 3, 6, 8, 9]
+
+Als Nächstes legst du in Supabase unter **Authentication -> Users** deinen Benutzer an und trägst dessen UUID in `public.app_users` als `admin` ein[cite: 2, 4].
