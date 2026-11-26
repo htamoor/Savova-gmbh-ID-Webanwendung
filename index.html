@@ -131,14 +131,42 @@ async function recordScan(tag){
     setTimeout(()=>focusHidScannerInput(),100);
   }
 }
-async function loadEvents(){
-  const {data,error}=await db.from('scan_events').select('*').order('event_seq',{ascending:false}).limit(1000);
-  if(error){msg('scanMsg','Ereignisprotokoll konnte nicht geladen werden: '+error.message,'err');return;}
-  events=data||[];renderMetrics();renderRecent();renderHistory();
+async function loadEvents() {
+  const { data, error } = await db
+    .from('scan_events')
+    .select('*')
+    .order('event_seq', { ascending: false })
+    .limit(1000);
+  if (error) {
+    msg('scanMsg', 'Ereignisprotokoll konnte nicht geladen werden: ' + error.message, 'err');
+    return;
+  }
+  events = data || [];
+  try { renderRecent(); } catch (e) { console.error('renderRecent:', e); }
+  try { renderMetrics(); } catch (e) { console.error('renderMetrics:', e); }
+  try { renderHistory(); } catch (e) { console.error('renderHistory:', e); }
 }
+  
 function cancelledIds(){return new Set(events.filter(e=>e.event_type==='cancel').map(e=>e.original_event_id));}
 function validScans(){const c=cancelledIds();return events.filter(e=>e.event_type==='scan'&&!c.has(e.id));}
-function renderMetrics(){const valid=validScans();const now=new Date();const today=now.toLocaleDateString('sv-SE');const month=today.slice(0,7);$('mToday').textContent=valid.filter(e=>e.server_recorded_at.slice(0,10)===today).length;$('mMonth').textContent=valid.filter(e=>e.server_recorded_at.startsWith(month)).length;$('mLast').textContent=events[0]?new Date(events[0].server_recorded_at).toLocaleString('de-DE'):'–';}
+function renderMetrics() {
+  const valid = typeof validScans === 'function' ? validScans() : events;
+  const now = new Date();
+  const today = now.toLocaleDateString('sv-SE');
+  const month = today.slice(0, 7);
+
+  const toLocalDay = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return Number.isNaN(d.getTime()) ? String(ts).slice(0, 10) : d.toLocaleDateString('sv-SE');
+  };
+
+  $('mToday').textContent = valid.filter((e) => toLocalDay(e.server_recorded_at) === today).length;
+  $('mMonth').textContent = valid.filter((e) => toLocalDay(e.server_recorded_at).startsWith(month)).length;
+  $('mLast').textContent = events[0]?.server_recorded_at
+    ? new Date(events[0].server_recorded_at).toLocaleString('de-DE')
+    : '–';
+}
 function renderRecent(){const rows=events.slice(0,8);$('recentList').innerHTML=rows.length?rows.map(e=>`<div style="padding:7px 0;border-bottom:1px solid #e6eaee"><b>${esc(e.tag_id)}</b> · ${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}<div class="muted">${e.event_type==='cancel'?'Stornierung':'Erfassung'} · ${esc(tagMap[e.tag_id]?.name||e.container_ref)}</div></div>`).join(''):'Noch keine Einträge.';}
 function renderHistory(){const q=($('historySearch').value||'').toUpperCase();const c=cancelledIds();const rows=events.filter(e=>e.event_type==='scan'&&(!q||e.tag_id.includes(q)));$('historyBody').innerHTML=rows.map(e=>{const cancelled=c.has(e.id);const b=tagMap[e.tag_id]||{};return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(b.name||e.container_ref)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${!cancelled&&['admin','operator'].includes(appRole)?`<button class="btn danger" onclick="cancelScan('${e.id}')">Stornieren</button>`:'–'}</td></tr>`;}).join('');}
 async function cancelScan(id){const reason=prompt('Bitte Stornierungsgrund eingeben (mindestens 5 Zeichen):');if(!reason||reason.trim().length<5)return;const {error}=await db.rpc('cancel_scan',{p_event_key:eventKey(),p_original_event_id:id,p_reason:reason.trim()});if(error){alert('Stornierung nicht gespeichert: '+error.message);return;}await loadEvents();}
