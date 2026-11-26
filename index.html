@@ -25,10 +25,9 @@
 <div class="foot" style="margin:18px 4px">Technischer Hinweis: Die Serverzeit ist maßgeblich. Offline-Scans werden nicht als bestätigte Leerungen gespeichert. Die Normkonformität nach DIN EN 14803:2024-12 muss gesondert anhand der vollständigen Hardware-, Schnittstellen- und Prozessanforderungen bewertet werden.</div>
 </div>
 <script>
-// Projektkonfiguration aus der bisherigen Anwendung. Der anon/publishable Key ist kein Geheimnis;
-// die Sicherheit muss durch Auth, RLS und die unten verwendeten RPC-Funktionen gewährleistet sein.
-const SUPABASE_URL = 'https://bcdejuyjxyzqpoleogby.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjZGVqdXlqeHl6cXBvbGVvZ2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NzI2NTMsImV4cCI6MjA5NzE0ODY1M30.8tuj9KlRN5xk59WdefRB_nY2S0iE4QzvIZRVK615FS8';
+// Bitte SUPABASE_URL auf die Project URL deines neuen Supabase-Projekts setzen.
+const SUPABASE_URL = 'https://DEIN-PROJEKT-REF.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GgRr9fSUOIThON-nuxRd-A__Gb1HF3l';
 const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let session=null, appRole=null, events=[], containers=[], tagMap={}, btCharacteristic=null, btDevice=null, scanBuffer='', scanBufferTimer=null;
 const $=id=>document.getElementById(id);
@@ -58,16 +57,34 @@ async function loadContainers(){
   const {data,error}=await db.from('Behälter').select('*');
   if(error){msg('scanMsg','Stammdaten konnten nicht geladen werden: '+error.message,'err');return;}
   containers=data||[];tagMap={};
-  for(const b of containers){const main=String(b.ID??b.id??'').trim().toUpperCase();if(!main)continue;const obj={id:main,name:b.name||b.Name||b.Standort||'–',meisterei:b.Meisterei||b.meisterei||'–',los:b.Los||b.los||'–',typ:b.typ||b.Typ||b.Behältertyp||'–'};tagMap[main]=obj;
-    for(const k of ['zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID','transponder_2']){const raw=b[k];const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);for(const v of vals){const x=String(v||'').trim().toUpperCase();if(x&&!tagMap[x])tagMap[x]=obj;}}
+  for(const b of containers){
+    const main=String(b['Transponder ID']??b.ID??b.id??'').trim().toUpperCase();
+    if(!main)continue;
+    const obj={
+      id:main,
+      name:b['Anlagenname']||b.name||b.Name||b.Standort||'–',
+      meisterei:b.Meisterei||b.meisterei||'–',
+      los:b.Los||b.los||'–',
+      typ:b.typ||b.Typ||b.Behältertyp||'–'
+    };
+    tagMap[main]=obj;
+    for(const k of ['Transponder ID 2','Transponder 2','transponder_2','zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID']){
+      const raw=b[k];
+      const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);
+      for(const v of vals){
+        const x=String(v||'').trim().toUpperCase();
+        if(x&&!tagMap[x])tagMap[x]=obj;
+      }
+    }
   }
   $('mTags').textContent=Object.keys(tagMap).length;
-  const select=$('exportMeisterei');const vals=[...new Set(Object.values(tagMap).map(x=>x.meisterei).filter(x=>x&&x!=='–'))].sort();select.innerHTML='<option value="">Alle Meistereien</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
+  const select=$('exportMeisterei');
+  const vals=[...new Set(Object.values(tagMap).map(x=>x.meisterei).filter(x=>x&&x!=='–'))].sort();
+  select.innerHTML='<option value="">Alle Meistereien</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
 }
 async function connectScanner(){
   if(!navigator.bluetooth){msg('scanMsg','Dieser Browser unterstützt Web Bluetooth nicht. Bitte einen kompatiblen Browser und HTTPS verwenden.','err');return;}
   try{
-    // Protokoll/UUID aus der bisherigen Anwendung. Muss mit dem konkreten Lesegerät verifiziert werden.
     btDevice=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'007956'}],optionalServices:['00001101-0000-1000-8000-00805f9b34fb']});
     const server=await btDevice.gatt.connect();
     const service=await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
@@ -80,7 +97,6 @@ async function connectScanner(){
 }
 function onScannerData(event){
   const bytes=event.target.value;const chunk=new TextDecoder().decode(bytes);scanBuffer+=chunk;
-  // Geräte senden häufig CR/LF-getrennte Zeilen. Auch vollständige Einzelmeldungen werden verarbeitet.
   const parts=scanBuffer.split(/[\r\n]+/);scanBuffer=parts.pop()||'';
   for(const part of parts)if(part.trim())handleScannerMessage(part.trim());
   if(scanBufferTimer)clearTimeout(scanBufferTimer);
@@ -114,12 +130,12 @@ function renderRecent(){const rows=events.slice(0,8);$('recentList').innerHTML=r
 function renderHistory(){const q=($('historySearch').value||'').toUpperCase();const c=cancelledIds();const rows=events.filter(e=>e.event_type==='scan'&&(!q||e.tag_id.includes(q)));$('historyBody').innerHTML=rows.map(e=>{const cancelled=c.has(e.id);const b=tagMap[e.tag_id]||{};return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(b.name||e.container_ref)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${!cancelled&&['admin','operator'].includes(appRole)?`<button class="btn danger" onclick="cancelScan('${e.id}')">Stornieren</button>`:'–'}</td></tr>`;}).join('');}
 async function cancelScan(id){const reason=prompt('Bitte Stornierungsgrund eingeben (mindestens 5 Zeichen):');if(!reason||reason.trim().length<5)return;const {error}=await db.rpc('cancel_scan',{p_event_key:eventKey(),p_original_event_id:id,p_reason:reason.trim()});if(error){alert('Stornierung nicht gespeichert: '+error.message);return;}await loadEvents();}
 async function verifyChain(){
-  $('integrityResult').innerHTML='<div class=\"alert warn\">Prüfung läuft auf dem Datenbankserver …</div>';
+  $('integrityResult').innerHTML='<div class="alert warn">Prüfung läuft auf dem Datenbankserver …</div>';
   const {data,error}=await db.rpc('verify_scan_chain');
-  if(error){$('integrityResult').innerHTML=`<div class=\"alert err\">Prüfung fehlgeschlagen: ${esc(error.message)}</div>`;return;}
+  if(error){$('integrityResult').innerHTML=`<div class="alert err">Prüfung fehlgeschlagen: ${esc(error.message)}</div>`;return;}
   const result=Array.isArray(data)?data[0]:data;
   const ok=!!result?.is_valid;
-  $('integrityResult').innerHTML=`<div class=\"alert ${ok?'ok':'err'}\">${ok?'Die serverseitige SHA-256-Hash-Kette ist konsistent.':'Abweichung in der Hash-Kette erkannt.'} Geprüfte Ereignisse: ${esc(result?.checked_events??0)}.${ok?'':` Erste Abweichung bei Sequenz ${esc(result?.first_bad_seq??'unbekannt')}.`}</div>`;
+  $('integrityResult').innerHTML=`<div class="alert ${ok?'ok':'err'}">${ok?'Die serverseitige SHA-256-Hash-Kette ist konsistent.':'Abweichung in der Hash-Kette erkannt.'} Geprüfte Ereignisse: ${esc(result?.checked_events??0)}.${ok?'':` Erste Abweichung bei Sequenz ${esc(result?.first_bad_seq??'unbekannt')}.`}</div>`;
   $('hashBody').innerHTML=[...events].slice(0,100).map(e=>`<tr><td>${e.event_seq}</td><td>${esc(e.event_type)}</td><td>${esc((e.previous_hash||'GENESIS').slice(0,16))}…</td><td>${esc(e.content_hash.slice(0,24))}…</td></tr>`).join('');
 }
 function showTab(name,btn){document.querySelectorAll('main section[id^="tab-"]').forEach(x=>x.classList.add('hidden'));$('tab-'+name).classList.remove('hidden');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(name==='history')renderHistory();}
