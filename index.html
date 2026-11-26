@@ -132,16 +132,16 @@ async function recordScan(tag){
   }
 }
 async function loadEvents() {
-  const { data, error } = await db
-    .from('scan_events')
-    .select('*')
-    .order('event_seq', { ascending: false })
-    .limit(1000);
+  const { data, error } = await db.rpc('list_scan_events');
   if (error) {
     msg('scanMsg', 'Ereignisprotokoll konnte nicht geladen werden: ' + error.message, 'err');
+    console.error('list_scan_events:', error);
+    events = [];
+    renderRecent(); renderMetrics(); renderHistory();
     return;
   }
-  events = data || [];
+  events = Array.isArray(data) ? data : (data ? [data] : []);
+  events.sort((a,b) => Number(b.event_seq || 0) - Number(a.event_seq || 0));
   try { renderRecent(); } catch (e) { console.error('renderRecent:', e); }
   try { renderMetrics(); } catch (e) { console.error('renderMetrics:', e); }
   try { renderHistory(); } catch (e) { console.error('renderHistory:', e); }
