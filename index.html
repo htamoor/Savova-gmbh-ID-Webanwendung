@@ -1,641 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Savova – Behälteridentifikation</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg: #f4f7fa;
-      --card: #ffffff;
-      --text: #16202a;
-      --muted: #5c6b7a;
-      --border: #d9e2ec;
-      --primary: #155e9c;
-      --primary-hover: #0f4778;
-      --ok-bg: #e7f6ec;
-      --ok-text: #136534;
-      --err-bg: #fdecec;
-      --err-text: #9b1c1c;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    .container {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    header {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    .brand-title { font-weight: 700; font-size: 1.05rem; }
-    .brand-sub { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .badge {
-      background: #e6eff8;
-      color: var(--primary);
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 0.82rem;
-      font-weight: 600;
-    }
-    button {
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      padding: 9px 14px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    button.primary {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
-    }
-    button.primary:hover { background: var(--primary-hover); }
-    .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-    .nav-tabs button.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    .kpi-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-    }
-    .kpi-label { color: var(--muted); font-size: 0.82rem; }
-    .kpi-value { font-size: 1.35rem; font-weight: 700; margin-top: 6px; }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 16px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    .login-box { max-width: 420px; margin: 40px auto; }
-    .field { margin-bottom: 14px; }
-    label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; }
-    input, select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-      background: #fff;
-    }
-    input[readonly] { background: #f8fafc; color: var(--muted); }
-    .row-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .alert {
-      padding: 10px 12px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-      font-size: 0.9rem;
-    }
-    .alert.ok { background: var(--ok-bg); color: var(--ok-text); }
-    .alert.err { background: var(--err-bg); color: var(--err-text); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th, td {
-      text-align: left;
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .table-wrap { overflow-x: auto; }
-    .hidden { display: none !important; }
-    .hint { color: var(--muted); font-size: 0.82rem; margin-top: 6px; }
-    footer {
-      color: var(--muted);
-      font-size: 0.8rem;
-      margin-top: 24px;
-      line-height: 1.5;
-    }
-    @media print {
-      header, .nav-tabs, #view-capture, #view-integrity, #logoutBtn, .no-print {
-        display: none !important;
-      }
-      #view-export { display: block !important; }
-      body { background: #fff; }
-    }
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Savova – Behälteridentifikation</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{font-family:Arial,sans-serif;color:#17212b;background:#f4f6f8}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1200px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;padding:16px 20px;border:1px solid #dce2e8;border-radius:12px;margin-bottom:16px}.brand{font-weight:700}.muted{color:#647282;font-size:13px}.badge{display:inline-block;padding:4px 8px;border-radius:5px;background:#e8f1fb;color:#17558a;font-size:12px}.card{background:#fff;border:1px solid #dce2e8;border-radius:12px;padding:18px;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.metric{font-size:25px;font-weight:700;margin-top:5px}.btn{border:1px solid #cbd4dd;background:#fff;padding:9px 14px;border-radius:8px;cursor:pointer;font-size:14px}.primary{background:#155fa0;color:#fff;border-color:#155fa0}.danger{background:#fff3f2;color:#9e2922;border-color:#e7b6b2}.btn:disabled{opacity:.5;cursor:not-allowed}input,select{width:100%;padding:10px;border:1px solid #cbd4dd;border-radius:8px;background:#fff;font-size:14px;margin-top:5px}label{font-size:13px;color:#526170;display:block;margin:12px 0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.alert{padding:10px 12px;border-radius:8px;margin:10px 0;font-size:13px}.ok{background:#e8f5e9;color:#21652a}.warn{background:#fff5df;color:#805500}.err{background:#fdecea;color:#922d25}.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.tab.active{background:#e8f1fb;border-color:#8fb6da}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e6eaee;vertical-align:top}th{color:#526170;font-size:11px;text-transform:uppercase}.scroll{overflow:auto}.hidden{display:none!important}.scan-status{font-weight:700;margin:8px 0}.small{font-size:12px}.foot{font-size:12px;color:#657382;line-height:1.5}.title{font-size:18px;font-weight:700;margin-bottom:12px}@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}@media(max-width:480px){.grid{grid-template-columns:1fr 1fr}.wrap{padding:10px}}
+</style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div>
-        <div class="brand-title">Savova GmbH · Behälteridentifikation</div>
-        <div class="brand-sub">UHF-RFID · HID-Scanner · digitales Leerungsprotokoll</div>
-      </div>
-      <div class="header-right">
-        <span id="authBadge" class="badge">Nicht angemeldet</span>
-        <button id="logoutBtn" class="hidden" type="button">Abmelden</button>
-      </div>
-    </header>
+<body><div class="wrap">
+<header class="top"><div><div class="brand">Savova GmbH · Behälteridentifikation</div><div class="muted">UHF-RFID · HID-Scanner · digitales Leerungsprotokoll</div></div><div class="row"><span class="badge" id="roleBadge">Nicht angemeldet</span><button class="btn hidden" id="logoutBtn" onclick="logout()">Abmelden</button></div></header>
+<section id="loginView" class="card" style="max-width:460px;margin:7vh auto"><div class="title">Anmeldung</div><p class="muted">Bitte mit deinem persönlichen Supabase-Benutzerkonto anmelden.</p><label>E-Mail<input id="email" type="email" autocomplete="username"></label><label>Passwort<input id="password" type="password" autocomplete="current-password"></label><button class="btn primary" style="width:100%" onclick="login()">Anmelden</button><div id="loginMsg"></div><p class="foot">Benutzerkonten werden administrativ in Supabase Auth angelegt. Eine öffentliche Selbstregistrierung ist deaktiviert.</p></section>
+<main id="appView" class="hidden">
+<div class="tabs"><button class="btn tab active" data-tab="scan" onclick="showTab('scan',this)">Erfassung</button><button class="btn tab" data-tab="history" onclick="showTab('history',this)">Erfassungshistorie</button><button class="btn tab" data-tab="audit" onclick="showTab('audit',this)">Integritätsprüfung</button><button class="btn tab" data-tab="export" onclick="showTab('export',this)">Export</button></div>
+<section id="tab-scan">
+<div class="grid"><div class="card"><div class="muted">Leerungen heute</div><div class="metric" id="mToday">–</div></div><div class="card"><div class="muted">Leerungen im Monat</div><div class="metric" id="mMonth">–</div></div><div class="card"><div class="muted">Aktive Behälter-Tags</div><div class="metric" id="mTags">–</div></div><div class="card"><div class="muted">Letzter Servereintrag</div><div class="metric" style="font-size:16px" id="mLast">–</div></div></div>
+<div class="grid2"><div class="card"><div class="title">RFID-Leerung erfassen</div><div id="scanMsg"></div><div class="row"><button class="btn primary" id="focusHidBtn" onclick="focusHidScannerInput()">Scanfeld fokussieren</button><button class="btn hidden" id="syncRegistryBtn" onclick="syncRegistry()">Transponderregister synchronisieren</button><span class="badge" id="scannerState">HID bereit</span></div><div class="scan-status" id="scanStatus">Warte auf HID-Scan …</div><label>HID-Scanner-Eingabe (Tastaturmodus)<input id="hidScanInput" placeholder="Scanner-UID hier scannen (schließt mit Enter ab)..." autocomplete="off" autocapitalize="characters" spellcheck="false"></label><label>Letzte erkannte Transponder-ID<input id="tagDisplay" readonly placeholder="Wird nach dem Scan angezeigt" autocomplete="off"></label><label>Ereignis<select id="eventName"><option>Reguläre Leerung</option><option>Behälter nicht bereitgestellt</option><option>Behälter defekt</option><option>Zufahrt blockiert</option><option>Fehlbefüllung</option></select></label><label>Bemerkung<input id="note" maxlength="1000" placeholder="Optional"></label><div class="foot">Im HID-Modus sendet der Scanner die UID wie eine Tastatur und schließt mit Enter ab. Auf Android ggf. in den Tastatureinstellungen die Bildschirmtastatur für physische Tastaturen ausblenden.</div></div>
+<div class="card"><div class="title">Letzte Erfassungen</div><div id="recentList" class="muted">Noch keine Einträge.</div></div></div>
+</section>
+<section id="tab-history" class="hidden"><div class="card"><div class="title">Erfassungshistorie</div><div class="row"><input id="historySearch" placeholder="Suche nach Transponder-ID" style="max-width:320px" oninput="renderHistory()"><button class="btn" onclick="loadEvents()">Aktualisieren</button></div><div class="scroll"><table><thead><tr><th>Serverzeit</th><th>Transponder-ID</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="historyBody"></tbody></table></div></div></section>
+<section id="tab-audit" class="hidden"><div class="card"><div class="title">Integritätsprüfung</div><p class="muted">Prüft die SHA-256-Verkettung der vom angemeldeten Benutzer lesbaren Ereignisse. Eine lokale Prüfung ist ein zusätzlicher Kontrollschritt; ein externer Hash-Anker ist für Schutz gegen privilegierte Datenbankadministratoren erforderlich.</p><button class="btn primary" onclick="verifyChain()">Hash-Kette prüfen</button><div id="integrityResult" style="margin-top:12px"></div><div class="scroll"><table><thead><tr><th>Sequenz</th><th>Ereignis</th><th>Vorheriger Hash</th><th>Prüfhash</th></tr></thead><tbody id="hashBody"></tbody></table></div></div></section>
+<section id="tab-export" class="hidden"><div class="card"><div class="title">Leistungsnachweis exportieren</div><div class="grid2"><label>Monat<input id="exportMonth" type="month"></label><label>Autobahnmeisterei<select id="exportMeisterei"><option value="">Alle Meistereien</option></select></label></div><div class="row"><button class="btn primary" onclick="exportCSV()">CSV herunterladen</button><button class="btn" onclick="printReport()">Druckansicht / PDF</button></div><p class="foot">Stornierte Vorgänge werden nicht als gültige Leerungen gezählt. Stornierungen bleiben als eigene Ereignisse im Protokoll sichtbar.</p></div></section>
+</main>
+<div class="foot" style="margin:18px 4px">Technischer Hinweis: Die Serverzeit ist maßgeblich. Offline-Scans werden nicht als bestätigte Leerungen gespeichert. Die Normkonformität nach DIN EN 14803:2024-12 muss gesondert anhand der vollständigen Hardware-, Schnittstellen- und Prozessanforderungen bewertet werden.</div>
+</div>
+<script>
+const SUPABASE_URL = 'https://vnzhchwjtytlotcfexix.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GgRr9fSUOIThON-nuxRd-A__Gb1HF3l';
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let session=null, appRole=null, events=[], containers=[], tagMap={}, isSubmittingScan=false;
+const $=id=>document.getElementById(id);
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function msg(id,text,type='warn'){ $(id).innerHTML=`<div class="alert ${type}">${esc(text)}</div>`; }
+function eventKey(){return crypto.randomUUID();}
 
-    <!-- Login-Ansicht -->
-    <section id="loginSection" class="card login-box">
-      <h2 style="margin-top:0;">Anmeldung</h2>
-      <p class="hint" style="margin-top:-6px; margin-bottom:16px;">
-        Bitte mit deinem persönlichen Supabase-Benutzerkonto anmelden.
-      </p>
-      <div id="loginAlert" class="alert err hidden"></div>
-      <form id="loginForm">
-        <div class="field">
-          <label for="emailInput">E-Mail</label>
-          <input id="emailInput" type="email" required autocomplete="username" />
-        </div>
-        <div class="field">
-          <label for="passwordInput">Passwort</label>
-          <input id="passwordInput" type="password" required autocomplete="current-password" />
-        </div>
-        <button type="submit" class="primary" style="width:100%;">Anmelden</button>
-      </form>
-      <p class="hint" style="margin-top:14px;">
-        Benutzerkonten werden administrativ in Supabase Auth angelegt. Eine öffentliche Selbstregistrierung ist deaktiviert.
-      </p>
-    </section>
+function focusHidScannerInput(){
+  const input=$('hidScanInput');
+  if(!input || $('appView').classList.contains('hidden')) return;
+  if(!$('tab-scan') || $('tab-scan').classList.contains('hidden')) return;
+  input.focus({preventScroll:true});
+}
 
-    <!-- Hauptanwendung -->
-    <main id="appSection" class="hidden">
-      <nav class="nav-tabs">
-        <button type="button" class="active" data-tab="capture">Erfassung</button>
-        <button type="button" data-tab="history">Erfassungshistorie</button>
-        <button type="button" data-tab="integrity">Integritätsprüfung</button>
-        <button type="button" data-tab="export">Export</button>
-      </nav>
-
-      <section class="kpis">
-        <div class="kpi-card">
-          <div class="kpi-label">Leerungen heute</div>
-          <div id="kpiToday" class="kpi-value">–</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Leerungen im Monat</div>
-          <div id="kpiMonth" class="kpi-value">–</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Aktive Behälter-Tags</div>
-          <div id="kpiTags" class="kpi-value">–</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Letzter Servereintrag</div>
-          <div id="kpiLastEntry" class="kpi-value">–</div>
-        </div>
-      </section>
-
-      <!-- Tab: Erfassung -->
-      <section id="view-capture" class="grid-2">
-        <div class="card">
-          <h2 style="margin-top:0;">RFID-Leerung erfassen</h2>
-          <div id="captureAlert" class="alert hidden"></div>
-
-          <div class="row-actions" style="margin-bottom:14px;">
-            <button type="button" id="focusHidBtn" class="primary">Scanfeld fokussieren</button>
-            <button type="button" id="syncRegistryBtn">Transponderregister synchronisieren</button>
-          </div>
-
-          <div class="field">
-            <label for="hidScanInput">HID-Scanner-Eingabe (Tastaturmodus)</label>
-            <input
-              id="hidScanInput"
-              type="text"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="characters"
-              spellcheck="false"
-              placeholder="Bereit für HID-Scan (schließt mit Enter ab)..."
-            />
-            <div id="hidStatusText" class="hint">
-              HID aktiv: Fokus wird automatisch gehalten. Auf Android ggf. Bildschirmtastatur für physische Tastatur deaktivieren.
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="lastTagInput">Letzte erkannte Transponder-ID</label>
-            <input id="lastTagInput" type="text" readonly placeholder="Noch kein Scan erfasst" />
-          </div>
-
-          <div class="field">
-            <label for="eventSelect">Ereignis</label>
-            <select id="eventSelect">
-              <option value="REGULAR_EMPTYING">Reguläre Leerung</option>
-              <option value="NOT_PROVIDED">Behälter nicht bereitgestellt</option>
-              <option value="DEFECTIVE">Behälter defekt</option>
-              <option value="ACCESS_BLOCKED">Zufahrt blockiert</option>
-              <option value="MISFILLED">Fehlbefüllung</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="noteInput">Bemerkung</label>
-            <input id="noteInput" type="text" placeholder="Optional" />
-          </div>
-
-          <p class="hint">
-            Ein Scan wird nur mit aktiver Anmeldung und erreichbarer Datenbank als gültiger Vorgang gespeichert.
-          </p>
-        </div>
-
-        <div class="card">
-          <h2 style="margin-top:0;">Letzte Erfassungen</h2>
-          <div id="recentList" class="hint">Noch keine Einträge.</div>
-        </div>
-      </section>
-
-      <!-- Tab: Erfassungshistorie -->
-      <section id="view-history" class="card hidden">
-        <div class="row-actions" style="justify-content:space-between; margin-bottom:12px;">
-          <h2 style="margin:0;">Erfassungshistorie</h2>
-          <button type="button" id="refreshHistoryBtn">Aktualisieren</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Serverzeit</th>
-                <th>Transponder-ID</th>
-                <th>Standort</th>
-                <th>Meisterei</th>
-                <th>Ereignis</th>
-                <th>Status</th>
-                <th>Aktion</th>
-              </tr>
-            </thead>
-            <tbody id="historyBody">
-              <tr><td colspan="7" class="hint">Keine Einträge geladen.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Tab: Integritätsprüfung -->
-      <section id="view-integrity" class="card hidden">
-        <h2 style="margin-top:0;">Integritätsprüfung</h2>
-        <p class="hint">
-          Prüft die SHA-256-Verkettung der vom angemeldeten Benutzer lesbaren Ereignisse.
-        </p>
-        <button type="button" id="verifyChainBtn" class="primary">Hash-Kette prüfen</button>
-        <div id="chainResult" class="hint" style="margin-top:12px;">Noch nicht geprüft.</div>
-        <div class="table-wrap" style="margin-top:12px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Sequenz</th>
-                <th>Ereignis</th>
-                <th>Vorheriger Hash</th>
-                <th>Prüfhash</th>
-              </tr>
-            </thead>
-            <tbody id="chainBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Tab: Export -->
-      <section id="view-export" class="card hidden">
-        <h2 style="margin-top:0;">Leistungsnachweis exportieren</h2>
-        <div class="grid-2" style="margin-bottom:14px;">
-          <div class="field">
-            <label for="exportMonth">Monat</label>
-            <input id="exportMonth" type="month" />
-          </div>
-          <div class="field">
-            <label for="exportDepot">Autobahnmeisterei</label>
-            <select id="exportDepot">
-              <option value="ALL">Alle Meistereien</option>
-            </select>
-          </div>
-        </div>
-        <div class="row-actions no-print">
-          <button type="button" id="exportCsvBtn" class="primary">CSV herunterladen</button>
-          <button type="button" id="printPdfBtn">Druckansicht / PDF</button>
-        </div>
-        <p class="hint">
-          Stornierte Vorgänge werden nicht als gültige Leerungen gezählt. Stornierungen bleiben als eigene Ereignisse im Protokoll sichtbar.
-        </p>
-      </section>
-    </main>
-
-    <footer>
-      Technischer Hinweis: Die Serverzeit ist maßgeblich. Offline-Scans werden nicht als bestätigte Leerungen gespeichert.
-      Die Normkonformität nach DIN EN 14803:2024-12 muss gesondert anhand der vollständigen Hardware-, Schnittstellen- und Prozessanforderungen bewertet werden.
-    </footer>
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://vnzhchwjtytlotcfexix.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_GgRr9fSUOIThON-nuxRd-A__Gb1HF3l';
-
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const loginSection = document.getElementById('loginSection');
-    const appSection = document.getElementById('appSection');
-    const loginForm = document.getElementById('loginForm');
-    const loginAlert = document.getElementById('loginAlert');
-    const authBadge = document.getElementById('authBadge');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const captureAlert = document.getElementById('captureAlert');
-    const hidInput = document.getElementById('hidScanInput');
-    const focusHidBtn = document.getElementById('focusHidBtn');
-    const hidStatusText = document.getElementById('hidStatusText');
-    const lastTagInput = document.getElementById('lastTagInput');
-    const eventSelect = document.getElementById('eventSelect');
-    const noteInput = document.getElementById('noteInput');
-
-    let isProcessingScan = false;
-    let cachedEvents = [];
-
-    function showAlert(el, msg, type = 'err') {
-      el.textContent = msg;
-      el.className = `alert ${type}`;
-    }
-
-    function hideAlert(el) {
-      el.className = 'alert hidden';
-      el.textContent = '';
-    }
-
-    function focusHidScannerInput() {
-      if (!hidInput || appSection.classList.contains('hidden')) return;
-      if (document.getElementById('view-capture').classList.contains('hidden')) return;
-      hidInput.focus({ preventScroll: true });
-    }
-
-    // Tabs wechseln
-    document.querySelectorAll('.nav-tabs button').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-tabs button').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const tab = btn.dataset.tab;
-        ['capture', 'history', 'integrity', 'export'].forEach((name) => {
-          document.getElementById(`view-${name}`).classList.toggle('hidden', name !== tab);
-        });
-        if (tab === 'capture') {
-          setTimeout(() => focusHidScannerInput(), 50);
-        }
-      });
-    });
-
-    // Login
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      hideAlert(loginAlert);
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-
-      const { error } = await db.auth.signInWithPassword({ email, password });
-      if (error) {
-        showAlert(loginAlert, `Anmeldung fehlgeschlagen: ${error.message}`);
-        return;
-      }
-      await initSession();
-    });
-
-    logoutBtn.addEventListener('click', async () => {
-      await db.auth.signOut();
-      appSection.classList.add('hidden');
-      loginSection.classList.remove('hidden');
-      logoutBtn.classList.add('hidden');
-      authBadge.textContent = 'Nicht angemeldet';
-    });
-
-    async function initSession() {
-      const { data: { session } } = await db.auth.getSession();
-      if (!session) {
-        appSection.classList.add('hidden');
-        loginSection.classList.remove('hidden');
-        logoutBtn.classList.add('hidden');
-        authBadge.textContent = 'Nicht angemeldet';
-        return;
-      }
-
-      const { data: userRow, error: userErr } = await db
-        .from('app_users')
-        .select('role, active')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (userErr || !userRow || !userRow.active) {
-        await db.auth.signOut();
-        showAlert(loginAlert, 'Für dieses Benutzerkonto ist keine aktive Systemrolle hinterlegt. Bitte Administrator kontaktieren.');
-        return;
-      }
-
-      authBadge.textContent = `${session.user.email} (${userRow.role})`;
-      logoutBtn.classList.remove('hidden');
-      loginSection.classList.add('hidden');
-      appSection.classList.remove('hidden');
-
-      const now = new Date();
-      document.getElementById('exportMonth').value =
-        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-      await refreshDashboard();
-      setTimeout(() => focusHidScannerInput(), 100);
-    }
-
-    async function refreshDashboard() {
-      const { count: tagCount } = await db
-        .from('container_tag_registry')
-        .select('*', { count: 'exact', head: true });
-      document.getElementById('kpiTags').textContent = tagCount ?? '–';
-
-      const { data: events, error } = await db
-        .from('scan_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (error) {
-        showAlert(captureAlert, `Ereignisprotokoll konnte nicht geladen werden: ${error.message}`);
-        return;
-      }
-
-      cachedEvents = events || [];
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const monthStr = new Date().toISOString().slice(0, 7);
-
-      const validEmpties = cachedEvents.filter((ev) => !ev.cancelled && ev.event_type === 'REGULAR_EMPTYING');
-      const todayCount = validEmpties.filter((ev) => (ev.created_at || '').startsWith(todayStr)).length;
-      const monthCount = validEmpties.filter((ev) => (ev.created_at || '').startsWith(monthStr)).length;
-
-      document.getElementById('kpiToday').textContent = String(todayCount);
-      document.getElementById('kpiMonth').textContent = String(monthCount);
-      document.getElementById('kpiLastEntry').textContent = cachedEvents[0]?.created_at
-        ? new Date(cachedEvents[0].created_at).toLocaleTimeString('de-DE')
-        : '–';
-
-      renderRecent(cachedEvents.slice(0, 8));
-      renderHistory(cachedEvents);
-    }
-
-    function renderRecent(items) {
-      const box = document.getElementById('recentList');
-      if (!items.length) {
-        box.textContent = 'Noch keine Einträge.';
-        box.className = 'hint';
-        return;
-      }
-      box.className = '';
-      box.innerHTML = items.map((ev) => {
-        const ts = ev.created_at ? new Date(ev.created_at).toLocaleString('de-DE') : '–';
-        return `<div style="padding:8px 0; border-bottom:1px solid var(--border);">
-          <strong>${ev.tag_id || ev.epc || '–'}</strong> · ${ev.event_type || '–'}<br>
-          <span class="hint">${ts}${ev.cancelled ? ' · STORNIERT' : ''}</span>
-        </div>`;
-      }).join('');
-    }
-
-    function renderHistory(items) {
-      const tbody = document.getElementById('historyBody');
-      if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="hint">Keine Einträge vorhanden.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = items.map((ev) => {
-        const ts = ev.created_at ? new Date(ev.created_at).toLocaleString('de-DE') : '–';
-        const status = ev.cancelled ? 'Storniert' : 'Gültig';
-        return `<tr>
-          <td>${ts}</td>
-          <td>${ev.tag_id || ev.epc || '–'}</td>
-          <td>${ev.location || '–'}</td>
-          <td>${ev.depot || '–'}</td>
-          <td>${ev.event_type || '–'}</td>
-          <td>${status}</td>
-          <td>–</td>
-        </tr>`;
-      }).join('');
-    }
-
-    // HID-Scan verarbeiten
-    async function submitHidScan(rawTag) {
-      if (isProcessingScan) return;
-      const cleanedTag = (rawTag || '').replace(/[\r\n\t]+/g, '').trim();
-      if (!cleanedTag) return;
-
-      isProcessingScan = true;
-      hidInput.value = '';
-      lastTagInput.value = cleanedTag;
-      hidStatusText.textContent = `Speichere Transponder-ID: ${cleanedTag} ...`;
-
-      try {
-        // Passe diese Parameternamen bei Bedarf an eure Funktion `public.record_scan` an:
-        const { error } = await db.rpc('record_scan', {
-          p_tag_id: cleanedTag,
-          p_event_type: eventSelect.value,
-          p_note: noteInput.value.trim() || null
-        });
-
-        if (error) throw error;
-
-        noteInput.value = '';
-        showAlert(captureAlert, `Scan gespeichert: ${cleanedTag}`, 'ok');
-        hidStatusText.textContent = `Zuletzt erfasst: ${cleanedTag} · Bereit für nächsten Scan.`;
-        await refreshDashboard();
-      } catch (err) {
-        showAlert(captureAlert, `Fehler beim Speichern (${cleanedTag}): ${err.message || err}`, 'err');
-        hidStatusText.textContent = `Fehler bei ${cleanedTag} – erneut scannen oder Fokus prüfen.`;
-      } finally {
-        isProcessingScan = false;
-        setTimeout(() => focusHidScannerInput(), 100);
+async function login(){
+  const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error){msg('loginMsg',error.message,'err');return;}
+  session=data.session; await initializeApp();
+}
+async function logout(){await db.auth.signOut();session=null;appRole=null;$('appView').classList.add('hidden');$('loginView').classList.remove('hidden');$('logoutBtn').classList.add('hidden');$('roleBadge').textContent='Nicht angemeldet';}
+async function initializeApp(){
+  const {data:userData,error:userError}=await db.from('app_users').select('role,active').eq('user_id',session.user.id).single();
+  if(userError||!userData||!userData.active){await db.auth.signOut();session=null;msg('loginMsg','Für dieses Benutzerkonto ist keine aktive Systemrolle hinterlegt. Bitte Administrator kontaktieren.','err');return;}
+  appRole=userData.role;$('roleBadge').textContent=appRole;$('logoutBtn').classList.remove('hidden');$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
+  $('focusHidBtn').disabled=!(appRole==='admin'||appRole==='operator');
+  $('hidScanInput').disabled=!(appRole==='admin'||appRole==='operator');
+  if(appRole==='admin')$('syncRegistryBtn').classList.remove('hidden');
+  await loadContainers();await loadEvents();
+  setTimeout(()=>focusHidScannerInput(),100);
+}
+async function syncRegistry(){
+  const {data,error}=await db.rpc('sync_container_tag_registry');
+  if(error){msg('scanMsg','Transponderregister konnte nicht synchronisiert werden: '+error.message,'err');return;}
+  await loadContainers();msg('scanMsg',`Transponderregister aktualisiert. Verarbeitete Kennungen: ${data}.`,'ok');
+  setTimeout(()=>focusHidScannerInput(),100);
+}
+async function loadContainers(){
+  const {data,error}=await db.from('Behälter').select('*');
+  if(error){msg('scanMsg','Stammdaten konnten nicht geladen werden: '+error.message,'err');return;}
+  containers=data||[];tagMap={};
+  for(const b of containers){
+    const main=String(b['Transponder ID']??b.ID??b.id??'').trim().toUpperCase();
+    if(!main)continue;
+    const obj={
+      id:main,
+      name:b['Anlagenname']||b.name||b.Name||b.Standort||'–',
+      meisterei:b.Meisterei||b.meisterei||'–',
+      los:b.Los||b.los||'–',
+      typ:b.typ||b.Typ||b.Behältertyp||'–'
+    };
+    tagMap[main]=obj;
+    for(const k of ['Transponder ID 2','Transponder 2','transponder_2','zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID']){
+      const raw=b[k];
+      const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);
+      for(const v of vals){
+        const x=String(v||'').trim().toUpperCase();
+        if(x&&!tagMap[x])tagMap[x]=obj;
       }
     }
-
-    hidInput.addEventListener('keydown', async (event) => {
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault();
-        await submitHidScan(hidInput.value);
-      }
-    });
-
-    focusHidBtn.addEventListener('click', () => {
-      focusHidScannerInput();
-    });
-
-    // Fokus zurückholen, wenn nicht bewusst in Bemerkung/Auswahl/Button geklickt wurde
-    document.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!target) return;
-      if (target.closest('input, select, textarea, button, a, label')) return;
-      setTimeout(() => focusHidScannerInput(), 50);
-    });
-
-    // Transponderregister synchronisieren
-    document.getElementById('syncRegistryBtn').addEventListener('click', async () => {
-      hideAlert(captureAlert);
-      const { data, error } = await db.rpc('sync_container_tag_registry');
-      if (error) {
-        showAlert(captureAlert, `Synchronisierung fehlgeschlagen: ${error.message}`);
-        return;
-      }
-      const count = typeof data === 'number' ? data : (data?.count ?? data ?? '');
-      showAlert(captureAlert, `Transponderregister aktualisiert. Verarbeitete Kennungen: ${count}.`, 'ok');
-      await refreshDashboard();
-      setTimeout(() => focusHidScannerInput(), 100);
-    });
-
-    document.getElementById('refreshHistoryBtn').addEventListener('click', refreshDashboard);
-
-    // Hash-Kette prüfen
-    document.getElementById('verifyChainBtn').addEventListener('click', async () => {
-      const { data, error } = await db.rpc('verify_scan_chain');
-      const resEl = document.getElementById('chainResult');
-      if (error) {
-        resEl.textContent = `Fehler bei Integritätsprüfung: ${error.message}`;
-        return;
-      }
-      resEl.textContent = `Prüfung abgeschlossen: ${JSON.stringify(data)}`;
-    });
-
-    // CSV-Export
-    document.getElementById('exportCsvBtn').addEventListener('click', () => {
-      const month = document.getElementById('exportMonth').value;
-      const rows = cachedEvents.filter((ev) => !month || (ev.created_at || '').startsWith(month));
-      const header = ['id', 'created_at', 'tag_id', 'event_type', 'cancelled', 'note'];
-      const csv = [
-        header.join(';'),
-        ...rows.map((r) => header.map((k) => `"${String(r[k] ?? '').replace(/"/g, '""')}"`).join(';'))
-      ].join('\n');
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `leistungsnachweis-${month || 'export'}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-
-    document.getElementById('printPdfBtn').addEventListener('click', () => window.print());
-
-    initSession();
-  </script>
-</body>
-</html>
+  }
+  $('mTags').textContent=Object.keys(tagMap).length;
+  const select=$('exportMeisterei');
+  const vals=[...new Set(Object.values(tagMap).map(x=>x.meisterei).filter(x=>x&&x!=='–'))].sort();
+  select.innerHTML='<option value="">Alle Meistereien</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
+}
+function handleHidRawInput(raw){
+  if(isSubmittingScan)return;
+  let value=String(raw||'').replace(/[\r\n\t]+/g,'');
+  if(value.includes('CS:'))value=value.split('CS:').pop();else if(value.includes('EP:'))value=value.split('EP:').pop();
+  const tag=value.trim().replace(/[^a-zA-Z0-9._:-]/g,'').toUpperCase();
+  $('hidScanInput').value='';
+  if(!tag)return;
+  if(tag.length<4||tag.length>64){msg('scanMsg','Ungültige Transponder-Länge erkannt.','err');return;}
+  $('tagDisplay').value=tag;$('scanStatus').textContent='Transponder erkannt: '+tag;
+  recordScan(tag);
+}
+$('hidScanInput').addEventListener('keydown',(event)=>{
+  if(event.key==='Enter'||event.key==='Tab'){
+    event.preventDefault();
+    handleHidRawInput($('hidScanInput').value);
+  }
+});
+document.addEventListener('click',(event)=>{
+  const target=event.target;
+  if(!target)return;
+  if(target.closest('input, select, textarea, button, a, label'))return;
+  setTimeout(()=>focusHidScannerInput(),50);
+});
+async function recordScan(tag){
+  if(isSubmittingScan)return;
+  if(!session||!['admin','operator'].includes(appRole)){msg('scanMsg','Keine Berechtigung zur Erfassung.','err');return;}
+  const mapped=tagMap[tag];if(!mapped){msg('scanMsg','Unbekannter Transponder. Es wurde keine Leerung gespeichert.','err');setTimeout(()=>focusHidScannerInput(),100);return;}
+  isSubmittingScan=true;
+  const eKey=eventKey();const clientTime=new Date().toISOString();
+  $('scanStatus').textContent='Übertrage Scan an den Server …';
+  try{
+    const {data,error}=await db.rpc('record_scan',{p_event_key:eKey,p_tag_id:tag,p_event_name:$('eventName').value,p_note:$('note').value.trim(),p_scanner_label:'HID-UHF',p_client_scanned_at:clientTime});
+    if(error){$('scanStatus').textContent='Scan nicht bestätigt';msg('scanMsg','Keine bestätigte Leerung gespeichert: '+error.message,'err');return;}
+    $('scanStatus').textContent='Serverseitig gespeichert · '+new Date(data.server_recorded_at).toLocaleString('de-DE');$('note').value='';msg('scanMsg','Leerung erfolgreich und serverseitig protokolliert.','ok');await loadEvents();
+  }finally{
+    isSubmittingScan=false;
+    setTimeout(()=>focusHidScannerInput(),100);
+  }
+}
+async function loadEvents(){
+  const {data,error}=await db.from('scan_events').select('*').order('event_seq',{ascending:false}).limit(1000);
+  if(error){msg('scanMsg','Ereignisprotokoll konnte nicht geladen werden: '+error.message,'err');return;}
+  events=data||[];renderMetrics();renderRecent();renderHistory();
+}
+function cancelledIds(){return new Set(events.filter(e=>e.event_type==='cancel').map(e=>e.original_event_id));}
+function validScans(){const c=cancelledIds();return events.filter(e=>e.event_type==='scan'&&!c.has(e.id));}
+function renderMetrics(){const valid=validScans();const now=new Date();const today=now.toLocaleDateString('sv-SE');const month=today.slice(0,7);$('mToday').textContent=valid.filter(e=>e.server_recorded_at.slice(0,10)===today).length;$('mMonth').textContent=valid.filter(e=>e.server_recorded_at.startsWith(month)).length;$('mLast').textContent=events[0]?new Date(events[0].server_recorded_at).toLocaleString('de-DE'):'–';}
+function renderRecent(){const rows=events.slice(0,8);$('recentList').innerHTML=rows.length?rows.map(e=>`<div style="padding:7px 0;border-bottom:1px solid #e6eaee"><b>${esc(e.tag_id)}</b> · ${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}<div class="muted">${e.event_type==='cancel'?'Stornierung':'Erfassung'} · ${esc(tagMap[e.tag_id]?.name||e.container_ref)}</div></div>`).join(''):'Noch keine Einträge.';}
+function renderHistory(){const q=($('historySearch').value||'').toUpperCase();const c=cancelledIds();const rows=events.filter(e=>e.event_type==='scan'&&(!q||e.tag_id.includes(q)));$('historyBody').innerHTML=rows.map(e=>{const cancelled=c.has(e.id);const b=tagMap[e.tag_id]||{};return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(b.name||e.container_ref)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${!cancelled&&['admin','operator'].includes(appRole)?`<button class="btn danger" onclick="cancelScan('${e.id}')">Stornieren</button>`:'–'}</td></tr>`;}).join('');}
+async function cancelScan(id){const reason=prompt('Bitte Stornierungsgrund eingeben (mindestens 5 Zeichen):');if(!reason||reason.trim().length<5)return;const {error}=await db.rpc('cancel_scan',{p_event_key:eventKey(),p_original_event_id:id,p_reason:reason.trim()});if(error){alert('Stornierung nicht gespeichert: '+error.message);return;}await loadEvents();}
+async function verifyChain(){
+  $('integrityResult').innerHTML='<div class="alert warn">Prüfung läuft auf dem Datenbankserver …</div>';
+  const {data,error}=await db.rpc('verify_scan_chain');
+  if(error){$('integrityResult').innerHTML=`<div class="alert err">Prüfung fehlgeschlagen: ${esc(error.message)}</div>`;return;}
+  const result=Array.isArray(data)?data[0]:data;
+  const ok=!!result?.is_valid;
+  $('integrityResult').innerHTML=`<div class="alert ${ok?'ok':'err'}">${ok?'Die serverseitige SHA-256-Hash-Kette ist konsistent.':'Abweichung in der Hash-Kette erkannt.'} Geprüfte Ereignisse: ${esc(result?.checked_events??0)}.${ok?'':` Erste Abweichung bei Sequenz ${esc(result?.first_bad_seq??'unbekannt')}.`}</div>`;
+  $('hashBody').innerHTML=[...events].slice(0,100).map(e=>`<tr><td>${e.event_seq}</td><td>${esc(e.event_type)}</td><td>${esc((e.previous_hash||'GENESIS').slice(0,16))}…</td><td>${esc(e.content_hash.slice(0,24))}…</td></tr>`).join('');
+}
+function showTab(name,btn){document.querySelectorAll('main section[id^="tab-"]').forEach(x=>x.classList.add('hidden'));$('tab-'+name).classList.remove('hidden');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(name==='history')renderHistory();if(name==='scan')setTimeout(()=>focusHidScannerInput(),50);}
+function exportRows(){const month=$('exportMonth').value,am=$('exportMeisterei').value;return validScans().filter(e=>{const b=tagMap[e.tag_id]||{};return (!month||e.server_recorded_at.startsWith(month))&&(!am||b.meisterei===am);}).sort((a,b)=>a.server_recorded_at.localeCompare(b.server_recorded_at));}
+function exportCSV(){const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}const head=['Serverzeit','Transponder-ID','Standort','Autobahnmeisterei','Los','Behältertyp','Ereignis','Bemerkung','Ereignis-ID','SHA-256'];const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const body=rows.map(e=>{const b=tagMap[e.tag_id]||{};return [e.server_recorded_at,e.tag_id,b.name||e.container_ref,b.meisterei,b.los,b.typ,e.event_name,e.note,e.id,e.content_hash].map(q).join(';');});const blob=new Blob(['\uFEFF'+[head.map(q).join(';'),...body].join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='savova_entleerungsnachweis.csv';a.click();URL.revokeObjectURL(url);}
+function printReport(){const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}const w=window.open('','_blank');if(!w){alert('Pop-up bitte erlauben.');return;}w.document.write('<html lang="de"><meta charset="utf-8"><title>Entleerungsnachweis</title><style>body{font:12px Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left}</style><h1>Entleerungsnachweis – Savova GmbH</h1><p>Erstellt: '+esc(new Date().toLocaleString('de-DE'))+'</p><table><tr><th>Serverzeit</th><th>Transponder</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Hash</th></tr>'+rows.map(e=>{const b=tagMap[e.tag_id]||{};return '<tr><td>'+esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))+'</td><td>'+esc(e.tag_id)+'</td><td>'+esc(b.name||e.container_ref)+'</td><td>'+esc(b.meisterei||'–')+'</td><td>'+esc(e.event_name)+'</td><td>'+esc(e.content_hash)+'</td></tr>';}).join('')+'</table><script>window.print()<\/script></html>');w.document.close();}
+(async()=>{const {data}=await db.auth.getSession();if(data.session){session=data.session;await initializeApp();}db.auth.onAuthStateChange((_event,newSession)=>{if(!newSession){session=null;appRole=null;$('appView').classList.add('hidden');$('loginView').classList.remove('hidden');$('logoutBtn').classList.add('hidden');$('roleBadge').textContent='Nicht angemeldet';}});})();
+</script></body></html>
