@@ -151,7 +151,6 @@ async function loadContainers(){
       }
     }
   }
-}
   $('mTags').textContent=Object.keys(tagMap).length;
   const select=$('exportMeisterei');
   const vals=[...new Set(Object.values(tagMap).map(x=>x.meisterei).filter(x=>x&&x!=='–'))].sort();
