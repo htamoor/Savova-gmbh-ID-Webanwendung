@@ -12,14 +12,19 @@
 <header class="top"><div><div class="brand">Savova GmbH · Behälteridentifikation</div><div class="muted">UHF-RFID · HID-Scanner · digitales Leerungsprotokoll</div></div><div class="row"><span class="badge" id="roleBadge">Nicht angemeldet</span><button class="btn hidden" id="logoutBtn" onclick="logout()">Abmelden</button></div></header>
 <section id="loginView" class="card" style="max-width:460px;margin:7vh auto"><div class="title">Anmeldung</div><p class="muted">Bitte mit deinem persönlichen Supabase-Benutzerkonto anmelden.</p><label>E-Mail<input id="email" type="email" autocomplete="username"></label><label>Passwort<input id="password" type="password" autocomplete="current-password"></label><button class="btn primary" style="width:100%" onclick="login()">Anmelden</button><div id="loginMsg"></div><p class="foot">Benutzerkonten werden administrativ in Supabase Auth angelegt. Eine öffentliche Selbstregistrierung ist deaktiviert.</p></section>
 <main id="appView" class="hidden">
-<div class="tabs"><button class="btn tab active" data-tab="scan" onclick="showTab('scan',this)">Erfassung</button><button class="btn tab" data-tab="history" onclick="showTab('history',this)">Erfassungshistorie</button><button class="btn tab" data-tab="audit" onclick="showTab('audit',this)">Integritätsprüfung</button><button class="btn tab" data-tab="export" onclick="showTab('export',this)">Export</button></div>
+<div class="tabs" id="tabsBar">
+  <button class="btn tab active" data-tab="scan" onclick="showTab('scan',this)">Erfassung</button>
+  <button class="btn tab" data-tab="history" id="tabBtnHistory" onclick="showTab('history',this)">Erfassungshistorie</button>
+  <button class="btn tab" data-tab="audit" id="tabBtnAudit" onclick="showTab('audit',this)">Integritätsprüfung</button>
+  <button class="btn tab" data-tab="export" id="tabBtnExport" onclick="showTab('export',this)">Export</button>
+</div>
 <section id="tab-scan">
 <div class="grid"><div class="card"><div class="muted">Leerungen heute</div><div class="metric" id="mToday">–</div></div><div class="card"><div class="muted">Leerungen im Monat</div><div class="metric" id="mMonth">–</div></div><div class="card"><div class="muted">Aktive Behälter-Tags</div><div class="metric" id="mTags">–</div></div><div class="card"><div class="muted">Letzter Servereintrag</div><div class="metric" style="font-size:16px" id="mLast">–</div></div></div>
 <div class="grid2"><div class="card"><div class="title">RFID-Leerung erfassen</div><div id="scanMsg"></div><div class="row"><button class="btn primary" id="focusHidBtn" onclick="focusHidScannerInput()">Scanfeld fokussieren</button><button class="btn hidden" id="syncRegistryBtn" onclick="syncRegistry()">Transponderregister synchronisieren</button><span class="badge" id="scannerState">HID bereit</span></div><div class="scan-status" id="scanStatus">Warte auf HID-Scan …</div><label>HID-Scanner-Eingabe (Tastaturmodus)<input id="hidScanInput" placeholder="Scanner-UID hier scannen (schließt mit Enter ab)..." autocomplete="off" autocapitalize="characters" spellcheck="false"></label><label>Letzte erkannte Transponder-ID<input id="tagDisplay" readonly placeholder="Wird nach dem Scan angezeigt" autocomplete="off"></label><label>Ereignis<select id="eventName"><option>Reguläre Leerung</option><option>Behälter nicht bereitgestellt</option><option>Behälter defekt</option><option>Zufahrt blockiert</option><option>Fehlbefüllung</option></select></label><label>Bemerkung<input id="note" maxlength="1000" placeholder="Optional"></label><div class="foot">Im HID-Modus sendet der Scanner die UID wie eine Tastatur und schließt mit Enter ab. Auf Android ggf. in den Tastatureinstellungen die Bildschirmtastatur für physische Tastaturen ausblenden.</div></div>
 <div class="card"><div class="title">Letzte Erfassungen</div><div id="recentList" class="muted">Noch keine Einträge.</div></div></div>
 </section>
 <section id="tab-history" class="hidden"><div class="card"><div class="title">Erfassungshistorie</div><div class="row"><input id="historySearch" placeholder="Suche nach Transponder-ID" style="max-width:320px" oninput="renderHistory()"><button class="btn" onclick="loadEvents()">Aktualisieren</button></div><div class="scroll"><table><thead><tr><th>Serverzeit</th><th>Transponder-ID</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="historyBody"></tbody></table></div></div></section>
-<section id="tab-audit" class="hidden"><div class="card"><div class="title">Integritätsprüfung</div><p class="muted">Prüft die SHA-256-Verkettung der vom angemeldeten Benutzer lesbaren Ereignisse. Eine lokale Prüfung ist ein zusätzlicher Kontrollschritt; ein externer Hash-Anker ist für Schutz gegen privilegierte Datenbankadministratoren erforderlich.</p><button class="btn primary" onclick="verifyChain()">Hash-Kette prüfen</button><div id="integrityResult" style="margin-top:12px"></div><div class="scroll"><table><thead><tr><th>Sequenz</th><th>Ereignis</th><th>Vorheriger Hash</th><th>Prüfhash</th></tr></thead><tbody id="hashBody"></tbody></table></div></div></section>
+<section id="tab-audit" class="hidden"><div class="card"><div class="title">Integritätsprüfung</div><p class="muted">Prüft die SHA-256-Verkettung der Ereignisse. Eine lokale Prüfung ist ein zusätzlicher Kontrollschritt; ein externer Hash-Anker ist für Schutz gegen privilegierte Datenbankadministratoren erforderlich.</p><button class="btn primary" onclick="verifyChain()">Hash-Kette prüfen</button><div id="integrityResult" style="margin-top:12px"></div><div class="scroll"><table><thead><tr><th>Sequenz</th><th>Ereignis</th><th>Vorheriger Hash</th><th>Prüfhash</th></tr></thead><tbody id="hashBody"></tbody></table></div></div></section>
 <section id="tab-export" class="hidden"><div class="card"><div class="title">Leistungsnachweis exportieren</div><div class="grid2"><label>Monat<input id="exportMonth" type="month"></label><label>Autobahnmeisterei<select id="exportMeisterei"><option value="">Alle Meistereien</option></select></label></div><div class="row"><button class="btn primary" onclick="exportCSV()">CSV herunterladen</button><button class="btn" onclick="printReport()">Druckansicht / PDF</button></div><p class="foot">Stornierte Vorgänge werden nicht als gültige Leerungen gezählt. Stornierungen bleiben als eigene Ereignisse im Protokoll sichtbar.</p></div></section>
 </main>
 <div class="foot" style="margin:18px 4px">Technischer Hinweis: Die Serverzeit ist maßgeblich. Offline-Scans werden nicht als bestätigte Leerungen gespeichert. Die Normkonformität nach DIN EN 14803:2024-12 muss gesondert anhand der vollständigen Hardware-, Schnittstellen- und Prozessanforderungen bewertet werden.</div>
@@ -34,9 +39,45 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function msg(id,text,type='warn'){ $(id).innerHTML=`<div class="alert ${type}">${esc(text)}</div>`; }
 function eventKey(){return crypto.randomUUID();}
 
+function canScan(){return ['admin','operator'].includes(appRole);}
+function canReview(){return ['admin','auditor'].includes(appRole);}
+function canExport(){return appRole==='admin';}
+function canCancel(){return appRole==='admin';}
+
+function applyRolePermissions(){
+  const scanAllowed=canScan();
+  const reviewAllowed=canReview();
+  const exportAllowed=canExport();
+
+  $('focusHidBtn').disabled=!scanAllowed;
+  $('hidScanInput').disabled=!scanAllowed;
+  $('syncRegistryBtn').classList.toggle('hidden', appRole!=='admin');
+
+  $('tabBtnHistory').classList.toggle('hidden', !reviewAllowed);
+  $('tabBtnAudit').classList.toggle('hidden', !reviewAllowed);
+  $('tabBtnExport').classList.toggle('hidden', !exportAllowed);
+
+  const scanTabBtn=document.querySelector('.tab[data-tab="scan"]');
+  showTab('scan', scanTabBtn);
+}
+
+function resetAppState(){
+  session=null;
+  appRole=null;
+  events=[];
+  $('appView').classList.add('hidden');
+  $('loginView').classList.remove('hidden');
+  $('logoutBtn').classList.add('hidden');
+  $('roleBadge').textContent='Nicht angemeldet';
+  $('syncRegistryBtn').classList.add('hidden');
+  $('tabBtnHistory').classList.add('hidden');
+  $('tabBtnAudit').classList.add('hidden');
+  $('tabBtnExport').classList.add('hidden');
+}
+
 function focusHidScannerInput(){
   const input=$('hidScanInput');
-  if(!input || $('appView').classList.contains('hidden')) return;
+  if(!input || !canScan() || $('appView').classList.contains('hidden')) return;
   if(!$('tab-scan') || $('tab-scan').classList.contains('hidden')) return;
   input.focus({preventScroll:true});
 }
@@ -46,18 +87,17 @@ async function login(){
   if(error){msg('loginMsg',error.message,'err');return;}
   session=data.session; await initializeApp();
 }
-async function logout(){await db.auth.signOut();session=null;appRole=null;$('appView').classList.add('hidden');$('loginView').classList.remove('hidden');$('logoutBtn').classList.add('hidden');$('roleBadge').textContent='Nicht angemeldet';}
+async function logout(){await db.auth.signOut();resetAppState();}
 async function initializeApp(){
   const {data:userData,error:userError}=await db.from('app_users').select('role,active').eq('user_id',session.user.id).single();
-  if(userError||!userData||!userData.active){await db.auth.signOut();session=null;msg('loginMsg','Für dieses Benutzerkonto ist keine aktive Systemrolle hinterlegt. Bitte Administrator kontaktieren.','err');return;}
+  if(userError||!userData||!userData.active){await db.auth.signOut();resetAppState();msg('loginMsg','Für dieses Benutzerkonto ist keine aktive Systemrolle hinterlegt. Bitte Administrator kontaktieren.','err');return;}
   appRole=userData.role;$('roleBadge').textContent=appRole;$('logoutBtn').classList.remove('hidden');$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');
-  $('focusHidBtn').disabled=!(appRole==='admin'||appRole==='operator');
-  $('hidScanInput').disabled=!(appRole==='admin'||appRole==='operator');
-  if(appRole==='admin')$('syncRegistryBtn').classList.remove('hidden');
+  applyRolePermissions();
   await loadContainers();await loadEvents();
   setTimeout(()=>focusHidScannerInput(),100);
 }
 async function syncRegistry(){
+  if(appRole!=='admin'){msg('scanMsg','Nur Administratoren dürfen das Transponderregister synchronisieren.','err');return;}
   const {data,error}=await db.rpc('sync_container_tag_registry');
   if(error){msg('scanMsg','Transponderregister konnte nicht synchronisiert werden: '+error.message,'err');return;}
   await loadContainers();msg('scanMsg',`Transponderregister aktualisiert. Verarbeitete Kennungen: ${data}.`,'ok');
@@ -93,7 +133,7 @@ async function loadContainers(){
   select.innerHTML='<option value="">Alle Meistereien</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
 }
 function handleHidRawInput(raw){
-  if(isSubmittingScan)return;
+  if(isSubmittingScan||!canScan())return;
   let value=String(raw||'').replace(/[\r\n\t]+/g,'');
   if(value.includes('CS:'))value=value.split('CS:').pop();else if(value.includes('EP:'))value=value.split('EP:').pop();
   const tag=value.trim().replace(/[^a-zA-Z0-9._:-]/g,'').toUpperCase();
@@ -117,7 +157,7 @@ document.addEventListener('click',(event)=>{
 });
 async function recordScan(tag){
   if(isSubmittingScan)return;
-  if(!session||!['admin','operator'].includes(appRole)){msg('scanMsg','Keine Berechtigung zur Erfassung.','err');return;}
+  if(!session||!canScan()){msg('scanMsg','Keine Berechtigung zur Erfassung.','err');return;}
   const mapped=tagMap[tag];if(!mapped){msg('scanMsg','Unbekannter Transponder. Es wurde keine Leerung gespeichert.','err');setTimeout(()=>focusHidScannerInput(),100);return;}
   isSubmittingScan=true;
   const eKey=eventKey();const clientTime=new Date().toISOString();
@@ -137,16 +177,19 @@ async function loadEvents() {
     msg('scanMsg', 'Ereignisprotokoll konnte nicht geladen werden: ' + error.message, 'err');
     console.error('list_scan_events:', error);
     events = [];
-    renderRecent(); renderMetrics(); renderHistory();
+    renderRecent(); renderMetrics();
+    if (canReview()) renderHistory();
     return;
   }
   events = Array.isArray(data) ? data : (data ? [data] : []);
   events.sort((a,b) => Number(b.event_seq || 0) - Number(a.event_seq || 0));
   try { renderRecent(); } catch (e) { console.error('renderRecent:', e); }
   try { renderMetrics(); } catch (e) { console.error('renderMetrics:', e); }
-  try { renderHistory(); } catch (e) { console.error('renderHistory:', e); }
+  if (canReview()) {
+    try { renderHistory(); } catch (e) { console.error('renderHistory:', e); }
+  }
 }
-  
+
 function cancelledIds(){return new Set(events.filter(e=>e.event_type==='cancel').map(e=>e.original_event_id));}
 function validScans(){const c=cancelledIds();return events.filter(e=>e.event_type==='scan'&&!c.has(e.id));}
 function renderMetrics() {
@@ -168,9 +211,28 @@ function renderMetrics() {
     : '–';
 }
 function renderRecent(){const rows=events.slice(0,8);$('recentList').innerHTML=rows.length?rows.map(e=>`<div style="padding:7px 0;border-bottom:1px solid #e6eaee"><b>${esc(e.tag_id)}</b> · ${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}<div class="muted">${e.event_type==='cancel'?'Stornierung':'Erfassung'} · ${esc(tagMap[e.tag_id]?.name||e.container_ref)}</div></div>`).join(''):'Noch keine Einträge.';}
-function renderHistory(){const q=($('historySearch').value||'').toUpperCase();const c=cancelledIds();const rows=events.filter(e=>e.event_type==='scan'&&(!q||e.tag_id.includes(q)));$('historyBody').innerHTML=rows.map(e=>{const cancelled=c.has(e.id);const b=tagMap[e.tag_id]||{};return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(b.name||e.container_ref)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${!cancelled&&['admin','operator'].includes(appRole)?`<button class="btn danger" onclick="cancelScan('${e.id}')">Stornieren</button>`:'–'}</td></tr>`;}).join('');}
-async function cancelScan(id){const reason=prompt('Bitte Stornierungsgrund eingeben (mindestens 5 Zeichen):');if(!reason||reason.trim().length<5)return;const {error}=await db.rpc('cancel_scan',{p_event_key:eventKey(),p_original_event_id:id,p_reason:reason.trim()});if(error){alert('Stornierung nicht gespeichert: '+error.message);return;}await loadEvents();}
+function renderHistory(){
+  if(!canReview())return;
+  const q=($('historySearch').value||'').toUpperCase();
+  const c=cancelledIds();
+  const rows=events.filter(e=>e.event_type==='scan'&&(!q||e.tag_id.includes(q)));
+  $('historyBody').innerHTML=rows.map(e=>{
+    const cancelled=c.has(e.id);
+    const b=tagMap[e.tag_id]||{};
+    const actionCell=!cancelled&&canCancel()?`<button class="btn danger" onclick="cancelScan('${e.id}')">Stornieren</button>`:'–';
+    return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(b.name||e.container_ref)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${actionCell}</td></tr>`;
+  }).join('');
+}
+async function cancelScan(id){
+  if(!canCancel()){alert('Nur Administratoren dürfen Einträge stornieren.');return;}
+  const reason=prompt('Bitte Stornierungsgrund eingeben (mindestens 5 Zeichen):');
+  if(!reason||reason.trim().length<5)return;
+  const {error}=await db.rpc('cancel_scan',{p_event_key:eventKey(),p_original_event_id:id,p_reason:reason.trim()});
+  if(error){alert('Stornierung nicht gespeichert: '+error.message);return;}
+  await loadEvents();
+}
 async function verifyChain(){
+  if(!canReview()){$('integrityResult').innerHTML='<div class="alert err">Keine Berechtigung zur Integritätsprüfung.</div>';return;}
   $('integrityResult').innerHTML='<div class="alert warn">Prüfung läuft auf dem Datenbankserver …</div>';
   const {data,error}=await db.rpc('verify_scan_chain');
   if(error){$('integrityResult').innerHTML=`<div class="alert err">Prüfung fehlgeschlagen: ${esc(error.message)}</div>`;return;}
@@ -179,9 +241,37 @@ async function verifyChain(){
   $('integrityResult').innerHTML=`<div class="alert ${ok?'ok':'err'}">${ok?'Die serverseitige SHA-256-Hash-Kette ist konsistent.':'Abweichung in der Hash-Kette erkannt.'} Geprüfte Ereignisse: ${esc(result?.checked_events??0)}.${ok?'':` Erste Abweichung bei Sequenz ${esc(result?.first_bad_seq??'unbekannt')}.`}</div>`;
   $('hashBody').innerHTML=[...events].slice(0,100).map(e=>`<tr><td>${e.event_seq}</td><td>${esc(e.event_type)}</td><td>${esc((e.previous_hash||'GENESIS').slice(0,16))}…</td><td>${esc(e.content_hash.slice(0,24))}…</td></tr>`).join('');
 }
-function showTab(name,btn){document.querySelectorAll('main section[id^="tab-"]').forEach(x=>x.classList.add('hidden'));$('tab-'+name).classList.remove('hidden');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(name==='history')renderHistory();if(name==='scan')setTimeout(()=>focusHidScannerInput(),50);}
-function exportRows(){const month=$('exportMonth').value,am=$('exportMeisterei').value;return validScans().filter(e=>{const b=tagMap[e.tag_id]||{};return (!month||e.server_recorded_at.startsWith(month))&&(!am||b.meisterei===am);}).sort((a,b)=>a.server_recorded_at.localeCompare(b.server_recorded_at));}
-function exportCSV(){const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}const head=['Serverzeit','Transponder-ID','Standort','Autobahnmeisterei','Los','Behältertyp','Ereignis','Bemerkung','Ereignis-ID','SHA-256'];const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const body=rows.map(e=>{const b=tagMap[e.tag_id]||{};return [e.server_recorded_at,e.tag_id,b.name||e.container_ref,b.meisterei,b.los,b.typ,e.event_name,e.note,e.id,e.content_hash].map(q).join(';');});const blob=new Blob(['\uFEFF'+[head.map(q).join(';'),...body].join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='savova_entleerungsnachweis.csv';a.click();URL.revokeObjectURL(url);}
-function printReport(){const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}const w=window.open('','_blank');if(!w){alert('Pop-up bitte erlauben.');return;}w.document.write('<html lang="de"><meta charset="utf-8"><title>Entleerungsnachweis</title><style>body{font:12px Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left}</style><h1>Entleerungsnachweis – Savova GmbH</h1><p>Erstellt: '+esc(new Date().toLocaleString('de-DE'))+'</p><table><tr><th>Serverzeit</th><th>Transponder</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Hash</th></tr>'+rows.map(e=>{const b=tagMap[e.tag_id]||{};return '<tr><td>'+esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))+'</td><td>'+esc(e.tag_id)+'</td><td>'+esc(b.name||e.container_ref)+'</td><td>'+esc(b.meisterei||'–')+'</td><td>'+esc(e.event_name)+'</td><td>'+esc(e.content_hash)+'</td></tr>';}).join('')+'</table><script>window.print()<\/script></html>');w.document.close();}
-(async()=>{const {data}=await db.auth.getSession();if(data.session){session=data.session;await initializeApp();}db.auth.onAuthStateChange((_event,newSession)=>{if(!newSession){session=null;appRole=null;$('appView').classList.add('hidden');$('loginView').classList.remove('hidden');$('logoutBtn').classList.add('hidden');$('roleBadge').textContent='Nicht angemeldet';}});})();
+function showTab(name,btn){
+  if(name==='history'&&!canReview())name='scan';
+  if(name==='audit'&&!canReview())name='scan';
+  if(name==='export'&&!canExport())name='scan';
+  document.querySelectorAll('main section[id^="tab-"]').forEach(x=>x.classList.add('hidden'));
+  $('tab-'+name).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  const targetBtn=btn||document.querySelector(`.tab[data-tab="${name}"]`);
+  if(targetBtn)targetBtn.classList.add('active');
+  if(name==='history'&&canReview())renderHistory();
+  if(name==='scan')setTimeout(()=>focusHidScannerInput(),50);
+}
+function exportRows(){
+  if(!canExport())return [];
+  const month=$('exportMonth').value,am=$('exportMeisterei').value;
+  return validScans().filter(e=>{const b=tagMap[e.tag_id]||{};return (!month||e.server_recorded_at.startsWith(month))&&(!am||b.meisterei===am);}).sort((a,b)=>a.server_recorded_at.localeCompare(b.server_recorded_at));
+}
+function exportCSV(){
+  if(!canExport()){alert('Nur Administratoren dürfen Exporte erstellen.');return;}
+  const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}
+  const head=['Serverzeit','Transponder-ID','Standort','Autobahnmeisterei','Los','Behältertyp','Ereignis','Bemerkung','Ereignis-ID','SHA-256'];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const body=rows.map(e=>{const b=tagMap[e.tag_id]||{};return [e.server_recorded_at,e.tag_id,b.name||e.container_ref,b.meisterei,b.los,b.typ,e.event_name,e.note,e.id,e.content_hash].map(q).join(';');});
+  const blob=new Blob(['\uFEFF'+[head.map(q).join(';'),...body].join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='savova_entleerungsnachweis.csv';a.click();URL.revokeObjectURL(url);
+}
+function printReport(){
+  if(!canExport()){alert('Nur Administratoren dürfen Berichte drucken.');return;}
+  const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}
+  const w=window.open('','_blank');if(!w){alert('Pop-up bitte erlauben.');return;}
+  w.document.write('<html lang="de"><meta charset="utf-8"><title>Entleerungsnachweis</title><style>body{font:12px Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left}</style><h1>Entleerungsnachweis – Savova GmbH</h1><p>Erstellt: '+esc(new Date().toLocaleString('de-DE'))+'</p><table><tr><th>Serverzeit</th><th>Transponder</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Hash</th></tr>'+rows.map(e=>{const b=tagMap[e.tag_id]||{};return '<tr><td>'+esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))+'</td><td>'+esc(e.tag_id)+'</td><td>'+esc(b.name||e.container_ref)+'</td><td>'+esc(b.meisterei||'–')+'</td><td>'+esc(e.event_name)+'</td><td>'+esc(e.content_hash)+'</td></tr>';}).join('')+'</table><script>window.print()<\/script></html>');w.document.close();
+}
+(async()=>{const {data}=await db.auth.getSession();if(data.session){session=data.session;await initializeApp();}db.auth.onAuthStateChange((_event,newSession)=>{if(!newSession){resetAppState();}});})();
 </script></body></html>
