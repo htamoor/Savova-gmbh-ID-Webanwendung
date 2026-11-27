@@ -139,7 +139,7 @@ async function loadContainers(){
   for(const b of containers){
     const main=normTag(b['Transponder ID']??b.ID??b.id??'');
     if(!main)continue;
-    const rawName=b['Anlagenname']??b.name??b.Name??b.Standort??'';
+    const rawName=b['Anlagename']??b['Anlagenname']??b.name??b.Name??b.Standort??'';
     const obj={
       id:main,
       name:String(rawName).trim()||'–',
