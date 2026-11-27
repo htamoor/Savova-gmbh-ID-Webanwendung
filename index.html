@@ -39,6 +39,12 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function msg(id,text,type='warn'){ $(id).innerHTML=`<div class="alert ${type}">${esc(text)}</div>`; }
 function eventKey(){return crypto.randomUUID();}
 
+function normTag(v){return String(v??'').trim().toUpperCase();}
+function getContainerMeta(tagId){return tagMap[normTag(tagId)]||{};}
+function resolveStandort(meta, fallbackRef){
+  return (meta && meta.name && meta.name !== '–') ? meta.name : (fallbackRef || '–');
+}
+
 function canScan(){return ['admin','operator'].includes(appRole);}
 function canReview(){return ['admin','auditor'].includes(appRole);}
 function canExport(){return appRole==='admin';}
@@ -126,40 +132,36 @@ async function syncRegistry(){
   await loadContainers();msg('scanMsg',`Transponderregister aktualisiert. Verarbeitete Kennungen: ${data}.`,'ok');
   setTimeout(()=>focusHidScannerInput(),100);
 }
-function normTag(v){return String(v??'').trim().toUpperCase();}
-function getContainerMeta(tagId){return tagMap[normTag(tagId)]||{};}
-
 async function loadContainers(){
- const {data,error}=await db.from('Behälter').select('*');
- if(error){msg('scanMsg','Stammdaten konnten nicht geladen werden: '+error.message,'err');return;}
- containers=data||[];tagMap={};
- for(const b of containers){
-  const main=normTag(b['Transponder ID']??b.ID??b.id??'');
-   if(!main)continue;
-   const rawName=b['Anlagenname']??b.name??b.Name??b.Standort??'';
-   const obj={
-     id:main,
-     name:String(rawName).trim()||'–',
-     meisterei:String(b.Meisterei??b.meisterei??'').trim()||'–',
-     los:String(b.Los??b.los??'').trim()||'–',
-     typ:String(b.typ??b.Typ??b.Behältertyp??'').trim()||'–'
-   };
-  tagMap[main]=obj;
-  for(const k of ['Transponder ID (Zusatz)','Transponder ID (Zusatz) 2','Transponder ID 2','Transponder 2','transponder_2','zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID']){
-    const raw=b[k];
-    const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);
-    for(const v of vals){
-    const x=normTag(v);
-    if(x&&!tagMap[x])tagMap[x]=obj;
-    }
+  const {data,error}=await db.from('Behälter').select('*');
+  if(error){msg('scanMsg','Stammdaten konnten nicht geladen werden: '+error.message,'err');return;}
+  containers=data||[];tagMap={};
+  for(const b of containers){
+    const main=normTag(b['Transponder ID']??b.ID??b.id??'');
+    if(!main)continue;
+    const rawName=b['Anlagenname']??b.name??b.Name??b.Standort??'';
+    const obj={
+      id:main,
+      name:String(rawName).trim()||'–',
+      meisterei:String(b.Meisterei??b.meisterei??'').trim()||'–',
+      los:String(b.Los??b.los??'').trim()||'–',
+      typ:String(b.typ??b.Typ??b.Behältertyp??'').trim()||'–'
+    };
+    tagMap[main]=obj;
+    for(const k of ['Transponder ID (Zusatz)','Transponder ID (Zusatz) 2','Transponder ID 2','Transponder 2','transponder_2','zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID']){
+      const raw=b[k];
+      const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);
+      for(const v of vals){
+        const x=normTag(v);
+        if(x&&!tagMap[x])tagMap[x]=obj;
+      }
     }
   }
   $('mTags').textContent=Object.keys(tagMap).length;
   const select=$('exportMeisterei');
   const vals=[...new Set(Object.values(tagMap).map(x=>x.meisterei).filter(x=>x&&x!=='–'))].sort();
   select.innerHTML='<option value="">Alle Meistereien</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
-} 
-  
+}
 function handleHidRawInput(raw){
   if(isSubmittingScan||!canScan())return;
   let value=String(raw||'').replace(/[\r\n\t]+/g,'');
@@ -186,12 +188,13 @@ document.addEventListener('click',(event)=>{
 async function recordScan(tag){
   if(isSubmittingScan)return;
   if(!session||!canScan()){msg('scanMsg','Keine Berechtigung zur Erfassung.','err');return;}
-  const mapped=tagMap[tag];if(!mapped){msg('scanMsg','Unbekannter Transponder. Es wurde keine Leerung gespeichert.','err');setTimeout(()=>focusHidScannerInput(),100);return;}
+  const mapped=getContainerMeta(tag);
+  if(!mapped || !mapped.id){msg('scanMsg','Unbekannter Transponder. Es wurde keine Leerung gespeichert.','err');setTimeout(()=>focusHidScannerInput(),100);return;}
   isSubmittingScan=true;
   const eKey=eventKey();const clientTime=new Date().toISOString();
   $('scanStatus').textContent='Übertrage Scan an den Server …';
   try{
-    const {data,error}=await db.rpc('record_scan',{p_event_key:eKey,p_tag_id:tag,p_event_name:$('eventName').value,p_note:$('note').value.trim(),p_scanner_label:'HID-UHF',p_client_scanned_at:clientTime});
+    const {data,error}=await db.rpc('record_scan',{p_event_key:eKey,p_tag_id:normTag(tag),p_event_name:$('eventName').value,p_note:$('note').value.trim(),p_scanner_label:'HID-UHF',p_client_scanned_at:clientTime});
     if(error){$('scanStatus').textContent='Scan nicht bestätigt';msg('scanMsg','Keine bestätigte Leerung gespeichert: '+error.message,'err');return;}
     $('scanStatus').textContent='Serverseitig gespeichert · '+new Date(data.server_recorded_at).toLocaleString('de-DE');$('note').value='';msg('scanMsg','Leerung erfolgreich und serverseitig protokolliert.','ok');await loadEvents();
   }finally{
@@ -234,17 +237,25 @@ function renderMetrics() {
     ? new Date(events[0].server_recorded_at).toLocaleString('de-DE')
     : '–';
 }
-function renderRecent(){const rows=events.slice(0,8);$('recentList').innerHTML=rows.length?rows.map(e=>`<div style="padding:7px 0;border-bottom:1px solid #e6eaee"><b>${esc(e.tag_id)}</b> · ${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}<div class="muted">${e.event_type==='cancel'?'Stornierung':'Erfassung'} · ${esc(tagMap[e.tag_id]?.name||e.container_ref)}</div></div>`).join(''):'Noch keine Einträge.';}
+function renderRecent(){
+  const rows=events.slice(0,8);
+  $('recentList').innerHTML=rows.length?rows.map(e=>{
+    const b=getContainerMeta(e.tag_id);
+    const standort=resolveStandort(b,e.container_ref);
+    return `<div style="padding:7px 0;border-bottom:1px solid #e6eaee"><b>${esc(e.tag_id)}</b> · ${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}<div class="muted">${e.event_type==='cancel'?'Stornierung':'Erfassung'} · ${esc(standort)}</div></div>`;
+  }).join(''):'Noch keine Einträge.';
+}
 function renderHistory(){
   if(!canReview())return;
-  const q=($('historySearch').value||'').toUpperCase();
+  const q=normTag($('historySearch').value||'');
   const c=cancelledIds();
-  const rows=events.filter(e=>e.event_type==='scan'&&(!q||e.tag_id.includes(q)));
+  const rows=events.filter(e=>e.event_type==='scan'&&(!q||normTag(e.tag_id).includes(q)));
   $('historyBody').innerHTML=rows.map(e=>{
     const cancelled=c.has(e.id);
-    const b=tagMap[e.tag_id]||{};
+    const b=getContainerMeta(e.tag_id);
+    const standort=resolveStandort(b,e.container_ref);
     const actionCell=!cancelled&&canCancel()?`<button class="btn danger" onclick="cancelScan('${e.id}')">Stornieren</button>`:'–';
-    return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(b.name||e.container_ref)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${actionCell}</td></tr>`;
+    return `<tr><td>${esc(new Date(e.server_recorded_at).toLocaleString('de-DE'))}</td><td>${esc(e.tag_id)}</td><td>${esc(standort)}</td><td>${esc(b.meisterei||'–')}</td><td>${esc(e.event_name)}</td><td>${cancelled?'Storniert':'Gültig'}</td><td>${actionCell}</td></tr>`;
   }).join('');
 }
 async function cancelScan(id){
@@ -281,7 +292,7 @@ function exportRows(){
   if(!canExport())return [];
   const month=$('exportMonth').value,am=$('exportMeisterei').value;
   return validScans().filter(e=>{
-    const b=tagMap[e.tag_id]||{};
+    const b=getContainerMeta(e.tag_id);
     return (!month||toLocalMonth(e.server_recorded_at)===month)&&(!am||b.meisterei===am);
   }).sort((a,b)=>a.server_recorded_at.localeCompare(b.server_recorded_at));
 }
@@ -289,7 +300,7 @@ function exportCancelledCount(){
   const month=$('exportMonth').value,am=$('exportMeisterei').value,c=cancelledIds();
   return events.filter(e=>{
     if(e.event_type!=='scan'||!c.has(e.id))return false;
-    const b=tagMap[e.tag_id]||{};
+    const b=getContainerMeta(e.tag_id);
     return (!month||toLocalMonth(e.server_recorded_at)===month)&&(!am||b.meisterei===am);
   }).length;
 }
@@ -305,7 +316,11 @@ function exportCSV(){
   const rows=exportRows();if(!rows.length){alert('Keine bestätigten Leerungen im gewählten Zeitraum.');return;}
   const head=['Serverzeit','Transponder-ID','Standort','Autobahnmeisterei','Los','Behältertyp','Ereignis','Bemerkung','Ereignis-ID','SHA-256'];
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const body=rows.map(e=>{const b=tagMap[e.tag_id]||{};return [new Date(e.server_recorded_at).toLocaleString('de-DE'),e.tag_id,b.name||e.container_ref,b.meisterei,b.los,b.typ,e.event_name,e.note,e.id,e.content_hash].map(q).join(';');});
+  const body=rows.map(e=>{
+    const b=getContainerMeta(e.tag_id);
+    const standort=resolveStandort(b,e.container_ref);
+    return [new Date(e.server_recorded_at).toLocaleString('de-DE'),e.tag_id,standort,b.meisterei||'–',b.los||'–',b.typ||'–',e.event_name,e.note,e.id,e.content_hash].map(q).join(';');
+  });
   const blob=new Blob(['\uFEFF'+[head.map(q).join(';'),...body].join('\r\n')],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`savova_entleerungsnachweis${exportFileSuffix()}.csv`;a.click();URL.revokeObjectURL(url);
 }
@@ -319,9 +334,9 @@ function printReport(){
 
   const summaryMap=new Map();
   for(const e of rows){
-    const b=tagMap[e.tag_id]||{};
+    const b=getContainerMeta(e.tag_id);
     const datum=new Date(e.server_recorded_at).toLocaleDateString('de-DE');
-    const standort=b.name||e.container_ref||'–';
+    const standort=resolveStandort(b,e.container_ref);
     const meisterei=b.meisterei||'–';
     const los=b.los||'–';
     const key=[datum,standort,meisterei,los].join('||');
@@ -361,11 +376,12 @@ function printReport(){
     '<h2>Einzelnachweis ('+rows.length+' Leerungen)</h2>'+
     '<table><thead><tr><th>Datum</th><th>Uhrzeit</th><th>Transponder-ID</th><th>Standort</th><th>Meisterei</th><th>Ereignis</th><th>Bemerkung</th></tr></thead><tbody>'+
     rows.map(e=>{
-      const b=tagMap[e.tag_id]||{};
+      const b=getContainerMeta(e.tag_id);
+      const standort=resolveStandort(b,e.container_ref);
       const dt=new Date(e.server_recorded_at);
       const datum=dt.toLocaleDateString('de-DE');
       const uhrzeit=dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-      return '<tr><td>'+esc(datum)+'</td><td>'+esc(uhrzeit)+'</td><td>'+esc(e.tag_id)+'</td><td>'+esc(b.name||e.container_ref)+'</td><td>'+esc(b.meisterei||'–')+'</td><td>'+esc(e.event_name)+'</td><td>'+esc(e.note||'')+'</td></tr>';
+      return '<tr><td>'+esc(datum)+'</td><td>'+esc(uhrzeit)+'</td><td>'+esc(e.tag_id)+'</td><td>'+esc(standort)+'</td><td>'+esc(b.meisterei||'–')+'</td><td>'+esc(e.event_name)+'</td><td>'+esc(e.note||'')+'</td></tr>';
     }).join('')+
     '</tbody></table>'+
     '<script>window.print()<\/script></body></html>'
