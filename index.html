@@ -126,36 +126,40 @@ async function syncRegistry(){
   await loadContainers();msg('scanMsg',`Transponderregister aktualisiert. Verarbeitete Kennungen: ${data}.`,'ok');
   setTimeout(()=>focusHidScannerInput(),100);
 }
+function normTag(v){return String(v??'').trim().toUpperCase();}
+function getContainerMeta(tagId){return tagMap[normTag(tagId)]||{};}
+
 async function loadContainers(){
-  const {data,error}=await db.from('Behälter').select('*');
-  if(error){msg('scanMsg','Stammdaten konnten nicht geladen werden: '+error.message,'err');return;}
-  containers=data||[];tagMap={};
-  for(const b of containers){
-    const main=String(b['Transponder ID']??b.ID??b.id??'').trim().toUpperCase();
-    if(!main)continue;
-    const rawName=b['Anlagenname']??b.name??b.Name??b.Standort??'';
-    const obj={
-      id:main,
-      name:String(rawName).trim()||'–',
-      meisterei:String(b.Meisterei??b.meisterei??'').trim()||'–',
-      los:String(b.Los??b.los??'').trim()||'–',
-      typ:String(b.typ??b.Typ??b.Behältertyp??'').trim()||'–'
-    };
-    tagMap[main]=obj;
-    for(const k of ['Transponder ID (Zusatz)','Transponder ID (Zusatz) 2','Transponder ID 2','Transponder 2','transponder_2','zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID']){
-      const raw=b[k];
-      const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);
-      for(const v of vals){
-        const x=String(v||'').trim().toUpperCase();
-        if(x&&!tagMap[x])tagMap[x]=obj;
-      }
+ const {data,error}=await db.from('Behälter').select('*');
+ if(error){msg('scanMsg','Stammdaten konnten nicht geladen werden: '+error.message,'err');return;}
+ containers=data||[];tagMap={};
+ for(const b of containers){
+  const main=normTag(b['Transponder ID']??b.ID??b.id??'');
+   if(!main)continue;
+   const rawName=b['Anlagenname']??b.name??b.Name??b.Standort??'';
+   const obj={
+     id:main,
+     name:String(rawName).trim()||'–',
+     meisterei:String(b.Meisterei??b.meisterei??'').trim()||'–',
+     los:String(b.Los??b.los??'').trim()||'–',
+     typ:String(b.typ??b.Typ??b.Behältertyp??'').trim()||'–'
+   };
+  tagMap[main]=obj;
+  for(const k of ['Transponder ID (Zusatz)','Transponder ID (Zusatz) 2','Transponder ID 2','Transponder 2','transponder_2','zusatz_ids','Zusatz_IDs','zusatz_id','Zusatz_ID']){
+    const raw=b[k];
+    const vals=Array.isArray(raw)?raw:String(raw||'').split(/[;,|\s]+/);
+    for(const v of vals){
+    const x=normTag(v);
+    if(x&&!tagMap[x])tagMap[x]=obj;
+    }
     }
   }
   $('mTags').textContent=Object.keys(tagMap).length;
   const select=$('exportMeisterei');
   const vals=[...new Set(Object.values(tagMap).map(x=>x.meisterei).filter(x=>x&&x!=='–'))].sort();
   select.innerHTML='<option value="">Alle Meistereien</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
-}
+} 
+  
 function handleHidRawInput(raw){
   if(isSubmittingScan||!canScan())return;
   let value=String(raw||'').replace(/[\r\n\t]+/g,'');
